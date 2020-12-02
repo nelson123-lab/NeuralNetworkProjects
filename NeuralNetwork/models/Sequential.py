@@ -19,18 +19,22 @@ class Sequential(Model):
         self.loss_function = ""
         self.loss = 0
 
+        
+        
     def compile(self, loss, mini_batch_size=32, learning_rate=0.08):
         """
         :param loss: the loss function you want to use
         :param mini_batch_size: the mini-batch-size you want to use (optionally, standard=32)
         :param learning_rate: the learning_rate you want to use (optionally, standard=0.08)
         """
+                
 
         self.mini_batch_size = mini_batch_size
         self.learning_rate = learning_rate
         self.loss_function = loss
 
-
+        
+        
     def add(self, layer: Layer):
         """
         :param layer: the layer to add to the model
@@ -40,6 +44,7 @@ class Sequential(Model):
         of the current layer. (This is useful for backpropagation because the weights and biases of layer x
         get calculated with the derivative-activation function of the layer x+1.)
         """
+        
 
         if len(self.layers) == 0:
             layer.initialize_weights(layer.input_dim)
@@ -52,10 +57,12 @@ class Sequential(Model):
         self.layers.append(layer)
 
 
+                
     def summary(self):
         """
         This function prints a summary of the model.
         """
+        
 
         table = PrettyTable()
         table.field_names = ["index", "layer type", "layer units", "weights shape", "biases shape", "param #"]
@@ -80,6 +87,7 @@ class Sequential(Model):
         print("Total params: " + str(sum_of_params))
 
 
+        
     def calc_adjustment(self, expected_output_values, adjustments, activation_function, reversed_layer_index):
         """
         :param expected_output_values: usually a mini-batch of the expected output values
@@ -92,6 +100,7 @@ class Sequential(Model):
         otherwise we calculate the loss for layer x with the adjustments of the layer handled before.
         Then we calculate the derivative and return the product of the loss and the derivative.
         """
+        
 
         if reversed_layer_index == 0:
             predicted_output_values = self.layers[-1].values
@@ -107,6 +116,7 @@ class Sequential(Model):
         return adjustments
 
 
+    
     def backprop(self, input_values, expected_output_values):
         """
         :param input_values: usually a mini batch of all the input values
@@ -123,6 +133,7 @@ class Sequential(Model):
         the learning rate; and the new biases by subtracting the product of the delta_biases of layer x and
         the learning rate.
         """
+        
 
         d_weights = []
         d_biases = []
@@ -153,6 +164,7 @@ class Sequential(Model):
             self.layers[index].biases -= (self.learning_rate * d_biases[index])
 
 
+            
     def calc_feedforward(self, input_values):
         """
         :param input_values: usually a mini batch of all the input values
@@ -162,6 +174,7 @@ class Sequential(Model):
         the weights, biases and the values of the neurons of the layer before.
         """
 
+        
         for layer_id in range(len(self.layers)-1):
             if layer_id == 0:
                 self.layers[layer_id].compute(input_values)
@@ -169,6 +182,7 @@ class Sequential(Model):
             self.layers[layer_id+1].compute(self.layers[layer_id].values)
 
 
+            
     def get_mini_batch_data(self, input_values, expected_output_values):
         """
         :param input_values: the input values to train the model on
@@ -176,10 +190,12 @@ class Sequential(Model):
         :return: two small mini-batches, one containing input_values, the other expected_output_values
         """
 
+        
         input_mini_batch = input_values[:self.mini_batch_size]
         exp_output_mini_batch = expected_output_values[:self.mini_batch_size]
         return input_mini_batch, exp_output_mini_batch
 
+    
 
     def get_random_mini_batch(self, input_values, expected_output_values):
         """
@@ -189,12 +205,21 @@ class Sequential(Model):
         one the to the input values belonging expected output values
         """
 
+        
         input_mini_batch, expected_output_mini_batch = \
             shuffle_two_arrays_same_order(input_values, expected_output_values)
         return input_mini_batch[:self.mini_batch_size], expected_output_mini_batch[:self.mini_batch_size]
 
+    
 
     def create_mini_batches(self, input_values, expected_output_values):
+        """
+        :param input_values: all the input values
+        :param expected_output_values: all the expected output values
+        :return: a list of mini-batches of size self.mini_batch_size
+        """
+        
+        
         batches = []
         for i in range(int(len(input_values)/self.mini_batch_size)):
             input_mini_batch, exp_output_mini_batch = self.get_mini_batch_data(input_values, expected_output_values)
@@ -204,6 +229,7 @@ class Sequential(Model):
 
         return batches
 
+    
 
     def fit(self, input_values, expected_output_values, epochs=10, inner_epochs=1):
         """
@@ -213,6 +239,7 @@ class Sequential(Model):
         :param inner_epochs: the amount of how often the network should be trained with one batch before training it
         with the next batch
         """
+        
 
         self.input_values = input_values
         self.expected_output_values = expected_output_values
@@ -251,6 +278,7 @@ class Sequential(Model):
             print()
 
 
+            
     # function for testing the neural network
     def evaluate(self, input_values, expected_output_values):
         """
@@ -258,6 +286,7 @@ class Sequential(Model):
         :param expected_output_values: expected output values of the input values
         :return: the accuracy of the neural network on this set and the loss.
         """
+        
 
         amount = len(input_values)
         self.calc_feedforward(input_values)
@@ -272,6 +301,7 @@ class Sequential(Model):
 
         return acc, loss
 
+    
 
     def get_predicted_data(self, input_values):
         """
