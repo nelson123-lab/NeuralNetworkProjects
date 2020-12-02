@@ -14,12 +14,14 @@ def to_categorical(input_arr, number_of_categories: int):
     example: input_arr=[5, 1], number_of_categories=10
     --> [[0, 0, 0, 0, 0, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]]
     """
+    
 
     arr = np.zeros((len(input_arr), number_of_categories))
     for i in range(len(input_arr)):
         arr[i][int(input_arr[i])] = 1
 
     return arr
+
 
 
 def multiply(one, two):
@@ -31,6 +33,7 @@ def multiply(one, two):
     This function just tries to multiply the two arrays together and returns the product.
     """
 
+    
     final_one = one
     final_two = two
 
@@ -55,6 +58,7 @@ def multiply(one, two):
     return product
 
 
+
 def shuffle_two_arrays_same_order(x, y):
     """
     :param x: a numpy array
@@ -64,6 +68,7 @@ def shuffle_two_arrays_same_order(x, y):
     This function shuffles the two arrays given in the same order and returns the two shuffled arrays.
     """
 
+    
     if len(x) == len(y):
         randomize = np.arange(len(x))
         np.random.shuffle(randomize)
