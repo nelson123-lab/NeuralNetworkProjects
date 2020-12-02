@@ -3,57 +3,111 @@ sys.path.append("/home/tobias/python/NeuralNetworkProjects/")
 from NeuralNetworkProjects.NeuralNetwork.models.Sequential import *
 sys.path.append("/home/tobias/python/NeuralNetworkProjects/")
 from NeuralNetworkProjects.NeuralNetwork.layers.Dense import *
+sys.path.append("/home/tobias/python/NeuralNetworkProjects/")
+from NeuralNetworkProjects.NeuralNetwork.Utils import *
+from matplotlib import pyplot as plt
 
-import numpy as np
-import csv
+"""
+Just using Keras for getting the dataset. 
+"""
+from keras.datasets import mnist
 
+"""
+epochs: how often you want to train your model with the whole dataset
+number_of_categories: the amount of possible outputs (numbers from 0-9 --> 10) = number of output neurons
+"""
+epochs = 10
+number_of_categories = 10
+training_data_size = 4096
+testing_data_size = 1300
 
-amountData = 2048
-epochs = 128
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+x_train = x_train.reshape(60000, 784)
+x_train, y_train = shuffle_two_arrays_same_order(x_train, y_train)
+x_train = x_train[:training_data_size]
+y_train_not_categorical = y_train[:training_data_size]
 
+x_test = x_test.reshape(10000, 784)
+x_test, y_test = shuffle_two_arrays_same_order(x_test, y_test)
+x_test = x_test[:testing_data_size]
+y_test_not_categorical = y_test[:testing_data_size]
 
-# read data
-with open('data/train.csv','r') as dest_f:
-    data_iter = csv.reader(dest_f,
-                           delimiter = ',')
-    data = [data for data in data_iter]
+"""
+Instead of an output like "5" we want a list of size 10 where the value at index 5 is 1 and all others are zero.
+--> [0, 0, 0, 0, 0, 1, 0, 0, 0, 0]
+That is exactly what the to_categorical function does.
+"""
+y_train = to_categorical(y_train_not_categorical, number_of_categories)
+y_test = to_categorical(y_test_not_categorical, number_of_categories)
 
-train_data = np.asarray(data, dtype=np.float64)
-test_data = train_data[0:2048]
+"""
+Now there are numbers between 0 and 255 in the arrays x_train and x_test. 
+We want to normalize the numbers between 0 and 1. 
+(That is very important when we are using RELU as activation function, 
+so that the numbers of the weights and values do not explode.)
+"""
+x_train = x_train/255.0
+x_test = x_test/255.0
 
-
-# create training data
-train_data = train_data[2048:2048+(int(amountData))]
-output = train_data[:,0]
-
-output2dArr = np.zeros((len(output), 10))
-for i in range(len(output)):
-    output2dArr[i][int(output[i])] = 1
-
-train = train_data[:,1:]
-
-
-# create testing data
-test_output = test_data[:,0]
-test_output2dArr = np.zeros((len(test_output), 10))
-for i in range(len(test_output)):
-        test_output2dArr[i][int(test_output[i])] = 1
-
-test = test_data[:,1:]
-
-
-# creating model
+"""
+In the next steps we create our model and add layers with different activation functions to the model.
+input_dim = the amount of input neurons (in this example 784 (= 28x28))
+In the last layer we use the activation function Softmax which turns the calculated values into probabilities. 
+"""
 model = Sequential()
-model.add(Dense(256, activation="sigmoid", amount_of_input_neurons=784))
-model.add(Dense(128, activation="sigmoid"))
-model.add(Dense(64, activation="sigmoid"))
-model.add(Dense(32, activation="sigmoid"))
-model.add(Dense(16, activation="sigmoid"))
-model.add(Dense(10, activation="sigmoid"))
+model.add(Dense(256, activation="relu", input_dim=x_train.shape[1]))
+model.add(Dense(64, activation="relu"))
+model.add(Dense(10, activation="softmax"))
 
+"""
+As in Keras, the summary function gives us an oversight of the structure of our model. 
+Next we compile the model and set the loss function. 
+Optionally we also could set the mini-batch-size or the learning-rate.
+Finally we train our model with the function fit. 
+"""
 model.summary()
-model.create()
-model.train(train, output2dArr, epochs=epochs)
+model.compile(loss="categorical_crossentropy")
+model.fit(x_train, y_train, epochs=epochs)
 
-error1, error2, acc = model.test(test, test_output2dArr)
-print(error1, error2, acc)
+"""
+Next we test the model with the training data and the testing data. 
+If the training accuracy is way higher than the testing accuracy, the model might be overfitted. 
+"""
+acc_train, loss_train = model.evaluate(x_train, y_train)
+print("Training Accuracy: %.2f%%\n" % (acc_train*100))
+
+acc_test, loss_test = model.evaluate(x_test, y_test)
+print("Testing Accuracy: %.2f%%\n" % (acc_test*100))
+
+
+"""
+With the function get_predicted_data(x) we get the predicted values of the input values x.
+"""
+predicted_output = model.get_predicted_data(x_test)
+
+"""
+Now we just display the input images and the predicted result for visualization. 
+"""
+tested_input = x_test.reshape(testing_data_size, 28, 28)
+tested_input = tested_input[:(testing_data_size-(testing_data_size%9))]
+tested_input = tested_input.reshape(int(len(tested_input)/9), 9, 28, 28)
+
+for idx, images in enumerate(tested_input):
+    for i in range(9):
+        index = idx*9 + i
+        predicted = np.argmax(predicted_output[index])
+        expected = y_test_not_categorical[index]
+
+        ax = plt.subplot(330 + 1 * i+1)
+        ax.axis('off')
+
+        if expected == predicted:
+            ax.set_title(predicted, color="green")
+        else:
+            ax.set_title(f"exp: {expected}, pred: {predicted}", color="red")
+
+        plt.imshow(images[i], cmap=plt.get_cmap('gray'))
+    plt.show()
+
+
+

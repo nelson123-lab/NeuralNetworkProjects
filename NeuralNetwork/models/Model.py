@@ -7,7 +7,7 @@ class Model(ABC):
         pass
 
     @abstractmethod
-    def create(self):
+    def compile(self):
         pass
 
     @abstractmethod
@@ -15,9 +15,9 @@ class Model(ABC):
         pass
 
     @abstractmethod
-    def train(self):
+    def fit(self):
         pass
 
     @abstractmethod
-    def test(self):
+    def evaluate(self):
         pass
