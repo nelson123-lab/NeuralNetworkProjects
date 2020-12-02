@@ -16,6 +16,7 @@ class Dense(Layer):
         :param activation: the activation function for this layer
         :param input_dim: the amount of input neurons; should only be set for the first layer
         """
+        
 
         self.values = np.array([])
         self.weights = np.array([])
@@ -27,6 +28,7 @@ class Dense(Layer):
         self.input_dim = input_dim
 
 
+        
     def initialize_weights(self, units_of_layer_before):
         """
         :param units_of_layer_before: amount of neurons of the layer before
@@ -34,6 +36,7 @@ class Dense(Layer):
         For the RELU activation function we need smaller weights, in order to avoid exploding gradients.
         We use the "He initialization" (specifically +/- sqrt(2/n) where n is the amount of neurons of the layer before)
         """
+        
 
         if self.activation == "relu":
             self.weights = (2 * np.random.random((units_of_layer_before, self.units)) - 1) \
@@ -42,16 +45,19 @@ class Dense(Layer):
             self.weights = (2 * np.random.random((units_of_layer_before, self.units)) - 1)
 
 
+            
     def initialize_biases(self):
         """
         For the RELU activation function we need smaller biases, too.
         """
 
+        
         if self.activation == "relu":
             self.biases = (2 * np.random.random((1, self.units)) - 1) * 0.01
         else:
             self.biases = (2 * np.random.random((1, self.units)) - 1)
 
+            
 
     def compute(self, values_of_layer_before):
         """
@@ -61,6 +67,7 @@ class Dense(Layer):
         Then we calculate the values of the neurons with the activation function of the layer and the linear values.
         """
 
+        
         if self.activation == "sigmoid":
             self.values = sigmoid(multiply(values_of_layer_before, self.weights) + self.biases)
         if self.activation == "relu":
@@ -68,6 +75,7 @@ class Dense(Layer):
         if self.activation == "softmax":
             self.values = softmax(multiply(values_of_layer_before, self.weights) + self.biases)
 
+            
         """
         np.isnan(np.max(x)) is a good way to check if there is any number which is np.nan in the array. 
         This is important to know because than you most likely have exploding gradients. 
@@ -81,6 +89,7 @@ class Dense(Layer):
         in order to keep the numbers as small as possible.
         """
 
+        
         if np.isnan(np.max(self.values)) or np.isnan(np.max(self.weights)) or np.isnan(np.max(self.biases)):
             print("Exploding Gradients WARNING: if this warning shows up, it means that you have dead neurons in your "
                   "neural network due to high input values, weights or biases. "
