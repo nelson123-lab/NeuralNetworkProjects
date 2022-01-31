@@ -1,5 +1,4 @@
 from NeuralNetworkProjects.NeuralNetwork.layers.Layer import *
-from NeuralNetworkProjects.NeuralNetwork.ActivationFunctions import *
 from NeuralNetworkProjects.NeuralNetwork.Utils import *
 
 import numpy as np
@@ -16,84 +15,82 @@ class Dense(Layer):
         :param activation: the activation function for this layer
         :param input_dim: the amount of input neurons; should only be set for the first layer
         """
-        
 
-        self.values = np.array([])
-        self.weights = np.array([])
-        self.biases = np.array([])
+        self.s = np.array([])  # preactivation values
+        self.a = np.array([])  # activation values
+        self.W = np.array([])  # weights of layer
+        self.b = np.array([])  # bias of layer
+
+        self.dZ = 0.0
+        self.delta = 0.0
 
         self.units = units
-        self.activation = activation
-        self.derivative_activation = ""
         self.input_dim = input_dim
+        self.is_output_layer = False
 
+        self.set_activation(activation)
 
-        
     def initialize_weights(self, units_of_layer_before):
         """
         :param units_of_layer_before: amount of neurons of the layer before
 
-        For the RELU activation function we need smaller weights, in order to avoid exploding gradients.
-        We use the "He initialization" (specifically +/- sqrt(2/n) where n is the amount of neurons of the layer before)
+        For the RELU activation function we need smaller weights.
+        We use the "He Weight Initialization" (* sqrt(2/n) where n is the amount of neurons of the layer before)
         """
-        
 
-        if self.activation == "relu":
-            self.weights = (2 * np.random.random((units_of_layer_before, self.units)) - 1) \
+        if self.activation_name in ["relu", "leaky_relu"]:
+            self.W = (2 * np.random.random((units_of_layer_before, self.units)) - 1) \
                            * np.sqrt(2/units_of_layer_before)
         else:
-            self.weights = (2 * np.random.random((units_of_layer_before, self.units)) - 1)
-
-
+            self.W = (2 * np.random.random((units_of_layer_before, self.units)) - 1)
             
     def initialize_biases(self):
         """
         For the RELU activation function we need smaller biases, too.
         """
 
-        
-        if self.activation == "relu":
-            self.biases = (2 * np.random.random((1, self.units)) - 1) * 0.01
+        if self.activation_name in ["relu", "leaky_relu"]:
+            self.b = (2 * np.random.random((1, self.units)) - 1) * 0.01
         else:
-            self.biases = (2 * np.random.random((1, self.units)) - 1)
+            self.b = (2 * np.random.random((1, self.units)) - 1)
 
-            
-
-    def compute(self, values_of_layer_before):
+    def forward(self, values_of_layer_before):
         """
         :param values_of_layer_before: the values of the layer before which we need to calculate the new values
 
-        First we calculate linear: values = values_of_layer_before * weights + biases.
+        First we calculate the linear part: s = weights.T * values_of_layer_before + biases
         Then we calculate the values of the neurons with the activation function of the layer and the linear values.
         """
+        s = np.dot(values_of_layer_before, self.W) + self.b
 
-        
-        if self.activation == "sigmoid":
-            self.values = sigmoid(multiply(values_of_layer_before, self.weights) + self.biases)
-        if self.activation == "relu":
-            self.values = relu(multiply(values_of_layer_before, self.weights) + self.biases)
-        if self.activation == "softmax":
-            self.values = softmax(multiply(values_of_layer_before, self.weights) + self.biases)
+        self.a = self.activation(s)
 
-            
-        """
-        np.isnan(np.max(x)) is a good way to check if there is any number which is np.nan in the array. 
-        This is important to know because than you most likely have exploding gradients. 
-        
-        This means that calculated numbers are so high that they cannot be stored as this datatype anymore and 
-        then turn into np.nan which also effects the accuracy of the neural network. 
-        Since the activation function sigmoid minimizes every value and the softmax activation function 
-        just calculates the probabilities this problem only concerns layers with the RELU activation function. 
-        The RELU activation function and also leaky RELU do not minimize the numbers greater than zero, 
-        so you need to normalize the input values and set the weights and biases to a small value 
-        in order to keep the numbers as small as possible.
-        """
+        if not self.is_output_layer:
+            self.dZ = self.activation_prime(s)
 
-        
-        if np.isnan(np.max(self.values)) or np.isnan(np.max(self.weights)) or np.isnan(np.max(self.biases)):
-            print("Exploding Gradients WARNING: if this warning shows up, it means that you have dead neurons in your "
-                  "neural network due to high input values, weights or biases. "
-                  "This can affect the accuracy of the neural network.")
+        return self.a
 
-        if self.activation != "sigmoid" and self.activation != "relu" and self.activation != "softmax":
-            raise ValueError("ERROR: the given activation function is not avialable.")
+    def backward_(self, y, right_layer):
+        if self.is_output_layer:
+            error = self.a - y
+            self.delta = error / y.shape[0]
+        else:
+            self.delta = np.atleast_2d(np.dot(right_layer.delta, right_layer.W.T) * self.dZ)
+
+        return self.delta
+
+    def backward(self, y_or_output_gradient, right_layer):
+        if self.is_output_layer:
+            output_gradient = self.a - y_or_output_gradient
+            self.delta = output_gradient / y_or_output_gradient.shape[0]
+        else:
+            self.delta = np.atleast_2d(np.dot(right_layer.delta, right_layer.W.T) * self.dZ)
+
+        return self.delta
+
+    def update(self, learning_rate, left_a):
+        a = np.atleast_2d(left_a)
+        d = np.atleast_2d(self.delta)
+        ad = a.T.dot(d)
+        self.W -= learning_rate * ad
+        self.b -= learning_rate * np.sum(self.delta, axis=0)

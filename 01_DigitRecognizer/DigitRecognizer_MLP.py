@@ -5,7 +5,7 @@ sys.path.append("/home/tobias/python/NeuralNetworkProjects/")
 from NeuralNetworkProjects.NeuralNetwork.layers.Dense import *
 sys.path.append("/home/tobias/python/NeuralNetworkProjects/")
 from NeuralNetworkProjects.NeuralNetwork.Utils import *
-from matplotlib import pyplot as plt
+
 
 """
 Just using Keras for getting the dataset. 
@@ -88,26 +88,4 @@ predicted_output = model.get_predicted_data(x_test)
 """
 Now we just display the input images and the predicted result for visualization. 
 """
-tested_input = x_test.reshape(testing_data_size, 28, 28)
-tested_input = tested_input[:(testing_data_size-(testing_data_size%9))]
-tested_input = tested_input.reshape(int(len(tested_input)/9), 9, 28, 28)
-
-for idx, images in enumerate(tested_input):
-    for i in range(9):
-        index = idx*9 + i
-        predicted = np.argmax(predicted_output[index])
-        expected = y_test_not_categorical[index]
-
-        ax = plt.subplot(330 + 1 * i+1)
-        ax.axis('off')
-
-        if expected == predicted:
-            ax.set_title(predicted, color="green")
-        else:
-            ax.set_title(f"exp: {expected}, pred: {predicted}", color="red")
-
-        plt.imshow(images[i], cmap=plt.get_cmap('gray'))
-    plt.show()
-
-
-
+visualize_img(predicted_output, x_test, y_test_not_categorical)
