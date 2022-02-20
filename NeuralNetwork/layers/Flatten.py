@@ -18,6 +18,8 @@ class Flatten(Layer):
         self.delta = np.asarray([])
         self.dZ = np.asarray([])
 
+        self.layer_type = "Flatten"
+
         self.original_shape = ()
 
     def initialize_weights(self, units_of_layer_before):

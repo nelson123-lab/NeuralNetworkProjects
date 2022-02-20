@@ -158,11 +158,12 @@ class Sequential(Model):
             print(f"Epoch {epoch}/{epochs}")
             sys.stdout.flush()
             nr_of_batches_done = 0
-            loss, acc = 0, 0
             units = 2 * inner_epochs + 1
 
             input_values, expected_output_values = shuffle_two_arrays_same_order(input_values, expected_output_values)
             batches = self.create_mini_batches(input_values, expected_output_values)
+
+            epoch_losses, epoch_accs = [], []
 
             for repetition_nr in range(inner_epochs):
                 for input_d, y in batches:
@@ -186,18 +187,26 @@ class Sequential(Model):
                     x_random, y_random = self.get_random_mini_batch(self.x, self.y)
                     acc, loss = self.evaluate(x_random, y_random)
 
+                    epoch_accs.append(acc)
+                    epoch_losses.append(loss)
+
                     """
                     The following code of this function is just for printing the progress, loss and accuracy.
                     """
                     # units = 2 * inner_epochs + 1
-                    progress_output = ("=" * int(nr_of_batches_done/units)) + ">" + \
-                                      ("." * int((len(batches)*inner_epochs)/units - int(nr_of_batches_done/units)))
+                    progress_output = ("=" * int(nr_of_batches_done/(units*2))) + ">" + \
+                                      ("." * int((len(batches)*inner_epochs)/(units*2)
+                                                 - int(nr_of_batches_done/(units*2))))
                     print(f"\r [{progress_output}] - loss: {loss:.4f} - accuracy: {acc:.4f}", end='\r')
                     sys.stdout.flush()
                     nr_of_batches_done += 1
 
-            progress_output = ("=" * int(nr_of_batches_done/units)) + "="
-            print(f"\r [{progress_output}] - loss: {loss:.4f} - accuracy: {acc:.4f}", end='\r')
+            epoch_accs = np.array(epoch_accs)
+            epoch_losses = np.array(epoch_losses)
+
+            progress_output = ("=" * int(nr_of_batches_done/(units*2))) + "="
+            print(f"\r [{progress_output}] - loss: {epoch_losses.mean():.4f} - accuracy: "
+                  f"{epoch_accs.mean():.4f}", end='\r')
             sys.stdout.flush()
             print()
 

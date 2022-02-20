@@ -22,8 +22,8 @@ number_of_categories: the amount of possible outputs (numbers from 0-9 --> 10) =
 """
 epochs = 20
 number_of_categories = 10
-training_data_size = 4096
-testing_data_size = 1300
+training_data_size = 16384  # 16384  # 4096
+testing_data_size = 4096  # 4096  # 1300
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train = x_train.reshape(60000, 784)
@@ -35,7 +35,6 @@ x_test = x_test.reshape(10000, 784)
 x_test, y_test = shuffle_two_arrays_same_order(x_test, y_test)
 x_test = x_test[:testing_data_size]
 y_test_not_categorical = y_test[:testing_data_size]
-
 
 x_train = x_train.reshape(x_train.shape[0], 28, 28, 1)
 x_test = x_test.reshape(x_test.shape[0], 28, 28, 1)
@@ -66,10 +65,15 @@ input_dim = the amount of input neurons (in this example 784 (= 28x28))
 In the last layer we use the activation function Softmax which turns the calculated values into probabilities. 
 """
 model = Sequential()
-model.add(Conv2D(1, 4, (5, 5), padding='Same', activation='relu', input_shape=(28, 28, 1)))
-# model.add(Conv2D(4, 4, (5, 5), padding='Same', activation="relu"))
+
+nr_of_kernels_1 = 8
+nr_of_kernels_2 = 16
+model.add(Conv2D(1, nr_of_kernels_1, (5, 5), padding='Same', activation='relu', input_shape=(28, 28, 1), name="1"))  # 5
+model.add(Conv2D(nr_of_kernels_1, nr_of_kernels_2, (3, 3), padding='Same', activation="relu", name="2"))
 model.add(Flatten())
-model.add(Dense(3136, activation="relu"))
+model.add(Dense(28*28*nr_of_kernels_2, activation="relu"))  # 2
+
+model.add(Dense(1024, activation="relu"))
 model.add(Dense(256, activation="relu"))
 model.add(Dense(10, activation="softmax"))
 

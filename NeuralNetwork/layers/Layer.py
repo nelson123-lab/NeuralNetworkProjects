@@ -9,6 +9,7 @@ class Layer(ABC):
         self.activation = None
         self.activation_prime = None
         self.activation_name = None
+        self.layer_type = "Dense"
 
         self.input_dim = None
 

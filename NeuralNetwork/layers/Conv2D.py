@@ -11,7 +11,7 @@ A convolutional layer for 2D input values
 
 class Conv2D(Layer):
     def __init__(self, input_channels, nr_of_filters, kernel_size=(2, 2), strides=(1, 1),
-                 padding="same", activation="relu", input_shape=(28, 28, 1)):
+                 padding="same", activation="relu", input_shape=(28, 28, 1), name=""):
         """
         :param units: the amount of units in this layer
         :param activation: the activation function for this layer
@@ -31,7 +31,7 @@ class Conv2D(Layer):
         self.number_of_filters = nr_of_filters
         self.kernel_size = kernel_size
         self.strides = strides
-        # for now, only option "same" works (for kernel_sizes where the difference between x and y is at most 1)
+        # for now, only option "same" works
         self.padding = padding
 
         self.input_channels = input_channels
@@ -47,6 +47,10 @@ class Conv2D(Layer):
         self.input_shape_with_padding[-3] += (self.pad_y[0] + self.pad_y[1])
 
         self.set_activation(activation)
+
+        self.layer_type = "Conv2D"
+
+        self.name = name
 
     def initialize_weights(self, units_of_layer_before):
         """
@@ -105,6 +109,8 @@ class Conv2D(Layer):
                     for j in range(self.input_channels):
                         self.a[batch_sample_nr, i] += signal.correlate2d(self.x[batch_sample_nr], self.W[i, j], "valid")
         else:
+            shape[1] = self.number_of_filters
+
             pad_width = self.pad_width
             pad_width = (pad_width[0], (0, 0), pad_width[1], pad_width[2])
             values_with_padding = \
@@ -170,11 +176,11 @@ class Conv2D(Layer):
 
                 """
 
-        # TODO: generalize this code such that you can have more than one Conv layer in your network.
-
         shape = [self.x.shape[0]] + list(self.W.shape)
+
         kernels_gradient = np.zeros(shape)
-        input_gradient = np.zeros((self.x.shape[0], self.input_channels, delta.shape[-1]+4, delta.shape[-2]+4))
+        input_gradient = np.zeros((self.x.shape[0], self.input_channels, delta.shape[-1]+self.kernel_size[0]-1,
+                                   delta.shape[-2]+self.kernel_size[1]-1))
 
         x_shape = (self.input_shape[0], self.input_shape[1])
 
@@ -182,11 +188,16 @@ class Conv2D(Layer):
         nr_elements = len(output_gradient.reshape(-1))
 
         if nr_elements / (self.number_of_filters * self.x.shape[0]) != (x_shape[0] * x_shape[1]):
-            x_shape = (self.input_shape_with_padding[0], self.input_shape_with_padding[1])
+            x_shape = (right_layer.delta.shape[-2], right_layer.delta.shape[-1])
 
         output_gradient = right_layer.delta.reshape(
             (self.number_of_filters, self.x.shape[0], x_shape[0], x_shape[1])
         )
+
+        diff = self.x.shape[-1] - output_gradient.shape[-1] + 1
+        if diff != self.kernel_size[0]:
+            diff_i = int((self.kernel_size[0] - diff) / 2)
+            self.x = np.pad(self.x, pad_width=((0, 0), (diff_i, diff_i), (diff_i, diff_i)))
 
         for batch_sample_nr in range(output_gradient.shape[1]):
             for i in range(self.number_of_filters):
@@ -204,9 +215,9 @@ class Conv2D(Layer):
 
         kernels_gradient = kernels_gradient.sum(axis=0)
 
-        self.delta = self.activation_prime(input_gradient)
+        self.delta = input_gradient
         self.W -= learning_rate * self.activation_prime(kernels_gradient)
-        self.b -= learning_rate * np.sum(output_gradient, axis=1)
+        self.b -= learning_rate * np.sum(output_gradient[:, :, :self.b.shape[-2], :self.b.shape[-1]], axis=1)
         return self.delta
 
     def update(self, learning_rate, left_a):
